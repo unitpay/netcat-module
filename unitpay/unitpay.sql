@@ -1,0 +1,1 @@
+INSERT INTO Classificator_PaymentSystem(PaymentSystem_Name, PaymentSystem_Priority, Value, Checked) VALUES('Unitpay', '1', 'nc_payment_system_unitpay', 1);
