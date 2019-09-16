@@ -33,17 +33,26 @@ class nc_payment_system_unitpay extends nc_payment_system {
     protected function get_pay_request_url(nc_payment_invoice $invoice) {
 
 
+        $secret_key = $this->get_setting('SECRET KEY');
         $sum = $invoice->get_amount('%0.2F');
         $account = $invoice->get_id();
         $desc = 'Заказ №' . $invoice->get_id();
         $currency = $this->get_currency_code($invoice->get_currency());
+        $signature = hash('sha256', join('{up}', array(
+            $account,
+            $currency,
+            $desc,
+            $sum,
+            $secret_key
+        )));;
 
         // подготовка параметров для запроса
         $query_values = array(
             'sum' => $sum,
             'account' => $account,
             'desc' => $desc,
-            'currency' => $currency
+            'currency' => $currency,
+            'signature' => $signature
         );
         $query = $this->make_query_string($query_values);
 
