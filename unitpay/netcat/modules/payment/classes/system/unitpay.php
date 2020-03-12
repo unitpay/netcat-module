@@ -6,8 +6,6 @@ class nc_payment_system_unitpay extends nc_payment_system {
     const ERROR_SUM = 'Invalid sum';
     const ERROR_CURRENCY = 'Invalid currency';
 
-    const TARGET_URL = "https://unitpay.ru/pay/";
-
     protected $automatic = TRUE;
 
     // принимаемые валюты
@@ -16,6 +14,7 @@ class nc_payment_system_unitpay extends nc_payment_system {
 
     // параметры сайта в платежной системе
     protected $settings = array(
+        'DOMAIN' => null,
         'PUBLIC KEY' => null,
         'SECRET KEY' => null,
     );
@@ -56,7 +55,9 @@ class nc_payment_system_unitpay extends nc_payment_system {
         );
         $query = $this->make_query_string($query_values);
 
-        return self::TARGET_URL . $this->get_setting('PUBLIC KEY') . "?" . $query;
+        $domain = $this->get_setting('DOMAIN');
+
+        return "https://$domain/pay/" . $this->get_setting('PUBLIC KEY') . "?" . $query;
     }
 
     /**
