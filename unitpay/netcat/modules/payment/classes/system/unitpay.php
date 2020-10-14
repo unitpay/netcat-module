@@ -37,6 +37,8 @@ class nc_payment_system_unitpay extends nc_payment_system {
         $account = $invoice->get_id();
         $desc = 'Заказ №' . $invoice->get_id();
         $currency = $this->get_currency_code($invoice->get_currency());
+        $email = $invoice->get('customer_email');
+        $phone = preg_replace('/\D/', '', $invoice->get('customer_phone'));
         $signature = hash('sha256', join('{up}', array(
             $account,
             $currency,
@@ -53,11 +55,63 @@ class nc_payment_system_unitpay extends nc_payment_system {
             'currency' => $currency,
             'signature' => $signature
         );
+
+        if ($email){
+            $query_values['customerEmail'] = $email;
+        }
+
+        if ($phone){
+            $query_values['customerPhone'] = $phone;
+        }
+
+        if ($email || $phone){
+            $query_values['cashItems'] = $this->get_cash_items($invoice->get_items(), $currency);
+        }
+
         $query = $this->make_query_string($query_values);
 
         $domain = $this->get_setting('DOMAIN');
 
         return "https://$domain/pay/" . $this->get_setting('PUBLIC KEY') . "?" . $query;
+    }
+
+    /**
+     * @param nc_payment_invoice_item_collection $items
+     * @param $currencyCode
+     * @return array|string
+     */
+    protected function get_cash_items($items, $currencyCode)
+    {
+        $order_products = [];
+        /**
+         * @var nc_payment_invoice_item $item
+         */
+        foreach ($items as $item) {
+            switch ($item->get('vat_rate')){
+                case '20':
+                    $vat = 'vat20';
+                    break;
+                case '10':
+                    $vat = 'vat10';
+                    break;
+                case '0':
+                    $vat = 'vat0';
+                    break;
+                default:
+                    $vat = 'none';
+            }
+
+            $order_products[] = [
+                'name'     => $item->get('name'),
+                'count'    => $item->get('qty'),
+                'price'    => round($item->get('item_price'), 2),
+                'currency' => $currencyCode,
+                'type'     => ($item->get('name') == 'Доставка')? 'service' : 'commodity',
+                'nds'      => $vat
+            ];
+        }
+
+        return base64_encode(json_encode($order_products));
     }
 
     /**
